@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Ansvar-Systems/ch-food-safety",
+  "description": "Swiss food safety regulations -- LMG, Selbstkontrolle/HACCP, labelling, AOC/AOP/IGP, Swissness, temperature requirements",
+  "repository": {
+    "url": "https://github.com/Ansvar-Systems/ch-food-safety-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.ansvar.eu/ch-food-safety/mcp"
+    }
+  ]
+}
