@@ -1,20 +1,24 @@
 {
-  "server": "ch-crop-nutrients-mcp",
+  "server": "ch-food-safety-mcp",
   "jurisdiction": "CH",
   "version": "0.1.0",
   "last_ingest": "2026-04-05",
   "data": {
-    "crops": 18,
-    "soil_types": 10,
-    "nutrient_recommendations": 15,
-    "manure_values": 11,
-    "commodity_prices": 12
+    "self_monitoring_requirements": 10,
+    "registration_requirements": 12,
+    "labelling_rules": 8,
+    "temperature_requirements": 12,
+    "direct_sales_rules": 9,
+    "origin_protection": 22,
+    "fts_entries": 73
   },
-  "tools": 11,
+  "tools": 10,
   "sources": [
-    "GRUD 2017 (Agroscope)",
-    "Suisse-Bilanz Wegleitung (BLW)",
-    "AGRIDEA",
-    "SBV/swiss granum"
+    "Lebensmittelgesetz (LMG, SR 817.0)",
+    "Hygieneverordnung (HyV)",
+    "LGV (Lebensmittel- und Gebrauchsgegenstaendeverordnung)",
+    "BLV Selbstkontrolle-Leitlinien",
+    "AOC/AOP/IGP Register Schweiz",
+    "Swissness-Gesetzgebung (MSchG)"
   ]
 }

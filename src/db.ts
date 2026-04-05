@@ -42,71 +42,69 @@ export function createDatabase(dbPath?: string): Database {
 
 function initSchema(db: BetterSqlite3.Database): void {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS crops (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      crop_group TEXT NOT NULL,
-      typical_yield_t_ha REAL,
-      nutrient_offtake_n REAL,
-      nutrient_offtake_p2o5 REAL,
-      nutrient_offtake_k2o REAL,
-      growth_stages TEXT,
-      altitude_zone TEXT DEFAULT 'talzone',
+    CREATE TABLE IF NOT EXISTS self_monitoring_requirements (
+      id INTEGER PRIMARY KEY,
+      business_type TEXT NOT NULL,
+      requirement TEXT NOT NULL,
+      haccp_level TEXT NOT NULL,
+      documentation TEXT,
+      legal_basis TEXT,
+      language TEXT DEFAULT 'DE',
       jurisdiction TEXT NOT NULL DEFAULT 'CH'
     );
 
-    CREATE TABLE IF NOT EXISTS soil_types (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      soil_group INTEGER,
-      texture TEXT,
-      drainage_class TEXT,
-      ph_class TEXT,
-      description TEXT
+    CREATE TABLE IF NOT EXISTS registration_requirements (
+      id INTEGER PRIMARY KEY,
+      business_type TEXT NOT NULL,
+      activity TEXT NOT NULL,
+      authority TEXT NOT NULL,
+      requirement TEXT NOT NULL,
+      language TEXT DEFAULT 'DE',
+      jurisdiction TEXT NOT NULL DEFAULT 'CH'
     );
 
-    CREATE TABLE IF NOT EXISTS nutrient_recommendations (
+    CREATE TABLE IF NOT EXISTS labelling_rules (
       id INTEGER PRIMARY KEY,
-      crop_id TEXT REFERENCES crops(id),
-      soil_group INTEGER,
-      altitude_zone TEXT DEFAULT 'talzone',
-      previous_crop_group TEXT,
-      n_rec_kg_ha REAL,
-      p_rec_kg_ha REAL,
-      k_rec_kg_ha REAL,
-      mg_rec_kg_ha REAL,
+      product_type TEXT NOT NULL,
+      mandatory_info TEXT NOT NULL,
+      allergen_rules TEXT,
+      swissness_rule TEXT,
+      language TEXT DEFAULT 'DE',
+      jurisdiction TEXT NOT NULL DEFAULT 'CH'
+    );
+
+    CREATE TABLE IF NOT EXISTS temperature_requirements (
+      id INTEGER PRIMARY KEY,
+      food_category TEXT NOT NULL,
+      max_temp_c REAL NOT NULL,
+      transport_temp_c REAL,
       notes TEXT,
-      grud_section TEXT,
+      language TEXT DEFAULT 'DE',
       jurisdiction TEXT NOT NULL DEFAULT 'CH'
     );
 
-    CREATE TABLE IF NOT EXISTS manure_values (
+    CREATE TABLE IF NOT EXISTS direct_sales_rules (
       id INTEGER PRIMARY KEY,
-      animal_category TEXT NOT NULL,
-      housing_system TEXT,
-      n_per_gve REAL,
-      p2o5_per_gve REAL,
-      k2o_per_gve REAL,
-      nh3_loss_pct REAL,
-      notes TEXT,
+      product_type TEXT NOT NULL,
+      rule TEXT NOT NULL,
+      exemptions TEXT,
+      conditions TEXT,
+      language TEXT DEFAULT 'DE',
       jurisdiction TEXT NOT NULL DEFAULT 'CH'
     );
 
-    CREATE TABLE IF NOT EXISTS commodity_prices (
+    CREATE TABLE IF NOT EXISTS origin_protection (
       id INTEGER PRIMARY KEY,
-      crop_id TEXT REFERENCES crops(id),
-      market TEXT,
-      price_per_tonne REAL,
-      currency TEXT DEFAULT 'CHF',
-      price_source TEXT NOT NULL,
-      published_date TEXT,
-      retrieved_at TEXT,
-      source TEXT,
+      product_name TEXT NOT NULL,
+      protection_type TEXT NOT NULL,
+      region TEXT,
+      description TEXT,
+      language TEXT DEFAULT 'DE',
       jurisdiction TEXT NOT NULL DEFAULT 'CH'
     );
 
     CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
-      title, body, crop_group, jurisdiction
+      title, body, topic, jurisdiction
     );
 
     CREATE TABLE IF NOT EXISTS db_metadata (
@@ -115,20 +113,20 @@ function initSchema(db: BetterSqlite3.Database): void {
     );
 
     INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '1.0');
-    INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('mcp_name', 'Switzerland Crop Nutrients MCP');
+    INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('mcp_name', 'Switzerland Food Safety MCP');
     INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('jurisdiction', 'CH');
   `);
 }
 
-const FTS_COLUMNS = ['title', 'body', 'crop_group', 'jurisdiction'];
+const FTS_COLUMNS = ['title', 'body', 'topic', 'jurisdiction'];
 
 export function ftsSearch(
   db: Database,
   query: string,
   limit: number = 20
-): { title: string; body: string; crop_group: string; jurisdiction: string; rank: number }[] {
+): { title: string; body: string; topic: string; jurisdiction: string; rank: number }[] {
   const { results } = tieredFtsSearch(db, 'search_index', FTS_COLUMNS, query, limit);
-  return results as { title: string; body: string; crop_group: string; jurisdiction: string; rank: number }[];
+  return results as { title: string; body: string; topic: string; jurisdiction: string; rank: number }[];
 }
 
 /**
@@ -182,22 +180,32 @@ export function tieredFtsSearch(
     if (results.length > 0) return { tier: 'or', results };
   }
 
-  // Tier 6: LIKE fallback
-  const baseCols = ['name', 'crop_group'];
-  const likeConditions = words.map(() =>
-    `(${baseCols.map(c => `${c} LIKE ?`).join(' OR ')})`
-  ).join(' AND ');
-  const likeParams = words.flatMap(w =>
-    baseCols.map(() => `%${w}%`)
-  );
-  try {
-    const likeResults = db.all<Record<string, unknown>>(
-      `SELECT name as title, COALESCE(growth_stages, '') as body, crop_group, jurisdiction FROM crops WHERE ${likeConditions} LIMIT ?`,
-      [...likeParams, limit]
+  // Tier 6: LIKE fallback across all domain tables
+  const likeTables = [
+    { table: 'self_monitoring_requirements', cols: ['business_type', 'requirement'], titleCol: 'business_type', bodyCol: 'requirement', topic: 'selbstkontrolle' },
+    { table: 'registration_requirements', cols: ['business_type', 'requirement'], titleCol: 'business_type', bodyCol: 'requirement', topic: 'registrierung' },
+    { table: 'labelling_rules', cols: ['product_type', 'mandatory_info'], titleCol: 'product_type', bodyCol: 'mandatory_info', topic: 'etikettierung' },
+    { table: 'temperature_requirements', cols: ['food_category', 'notes'], titleCol: 'food_category', bodyCol: 'notes', topic: 'temperatur' },
+    { table: 'direct_sales_rules', cols: ['product_type', 'rule'], titleCol: 'product_type', bodyCol: 'rule', topic: 'direktvermarktung' },
+    { table: 'origin_protection', cols: ['product_name', 'description'], titleCol: 'product_name', bodyCol: 'description', topic: 'ursprungsschutz' },
+  ];
+
+  for (const lt of likeTables) {
+    const likeConditions = words.map(() =>
+      `(${lt.cols.map(c => `${c} LIKE ?`).join(' OR ')})`
+    ).join(' AND ');
+    const likeParams = words.flatMap(w =>
+      lt.cols.map(() => `%${w}%`)
     );
-    if (likeResults.length > 0) return { tier: 'like', results: likeResults };
-  } catch {
-    // LIKE fallback failed
+    try {
+      const likeResults = db.all<Record<string, unknown>>(
+        `SELECT ${lt.titleCol} as title, COALESCE(${lt.bodyCol}, '') as body, '${lt.topic}' as topic, jurisdiction FROM ${lt.table} WHERE ${likeConditions} LIMIT ?`,
+        [...likeParams, limit]
+      );
+      if (likeResults.length > 0) return { tier: 'like', results: likeResults };
+    } catch {
+      // LIKE fallback failed for this table
+    }
   }
 
   return { tier: 'none', results: [] };
