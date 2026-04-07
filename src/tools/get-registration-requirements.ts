@@ -1,4 +1,5 @@
 import { buildMeta } from '../metadata.js';
+import { buildCitation } from '../citation.js';
 import { validateJurisdiction } from '../jurisdiction.js';
 import type { Database } from '../db.js';
 
@@ -47,6 +48,12 @@ export function handleGetRegistrationRequirements(db: Database, args: Registrati
       authority: r.authority,
       requirement: r.requirement,
     })),
+    _citation: buildCitation(
+      'CH Food Registration',
+      `Registrierungsanforderungen ${args.business_type}`,
+      'get_registration_requirements',
+      { business_type: args.business_type },
+    ),
     _meta: buildMeta(),
   };
 }

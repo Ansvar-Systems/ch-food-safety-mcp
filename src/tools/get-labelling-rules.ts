@@ -1,4 +1,5 @@
 import { buildMeta } from '../metadata.js';
+import { buildCitation } from '../citation.js';
 import { validateJurisdiction } from '../jurisdiction.js';
 import type { Database } from '../db.js';
 
@@ -46,6 +47,12 @@ export function handleGetLabellingRules(db: Database, args: LabellingArgs) {
       allergen_rules: r.allergen_rules,
       swissness_rule: r.swissness_rule,
     })),
+    _citation: buildCitation(
+      'CH Labelling Rules',
+      `Etikettierungsvorschriften ${args.product_type ?? 'alle'}`,
+      'get_labelling_rules',
+      { ...(args.product_type ? { product_type: args.product_type } : {}) },
+    ),
     _meta: buildMeta(),
   };
 }
