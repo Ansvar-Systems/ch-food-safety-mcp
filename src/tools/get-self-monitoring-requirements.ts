@@ -1,4 +1,5 @@
 import { buildMeta } from '../metadata.js';
+import { buildCitation } from '../citation.js';
 import { validateJurisdiction } from '../jurisdiction.js';
 import type { Database } from '../db.js';
 
@@ -44,6 +45,12 @@ export function handleGetSelfMonitoringRequirements(db: Database, args: SelfMoni
       documentation: r.documentation,
       legal_basis: r.legal_basis,
     })),
+    _citation: buildCitation(
+      'CH Self-Monitoring',
+      `Selbstkontrolle ${args.business_type}`,
+      'get_self_monitoring_requirements',
+      { business_type: args.business_type },
+    ),
     _meta: buildMeta(),
   };
 }
