@@ -1,4 +1,5 @@
 import { buildMeta } from '../metadata.js';
+import { buildCitation } from '../citation.js';
 import { validateJurisdiction } from '../jurisdiction.js';
 import type { Database } from '../db.js';
 
@@ -46,6 +47,12 @@ export function handleGetTemperatureRequirements(db: Database, args: Temperature
       transport_temp_c: r.transport_temp_c,
       notes: r.notes,
     })),
+    _citation: buildCitation(
+      'CH Temperature Requirements',
+      `Temperaturvorschriften ${args.food_category ?? 'alle'}`,
+      'get_temperature_requirements',
+      { ...(args.food_category ? { food_category: args.food_category } : {}) },
+    ),
     _meta: buildMeta(),
   };
 }
