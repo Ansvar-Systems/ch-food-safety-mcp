@@ -1,4 +1,5 @@
 import { buildMeta } from '../metadata.js';
+import { buildCitation } from '../citation.js';
 import { validateJurisdiction } from '../jurisdiction.js';
 import type { Database } from '../db.js';
 
@@ -53,6 +54,12 @@ export function handleGetOriginProtection(db: Database, args: OriginProtectionAr
       region: r.region,
       description: r.description,
     })),
+    _citation: buildCitation(
+      'CH Origin Protection',
+      `AOC/AOP/IGP-Register ${args.product_name ?? 'alle'}`,
+      'get_origin_protection',
+      { ...(args.product_name ? { product_name: args.product_name } : {}) },
+    ),
     _meta: buildMeta(),
   };
 }
