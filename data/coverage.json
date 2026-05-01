@@ -2,7 +2,7 @@
   "server": "ch-food-safety-mcp",
   "jurisdiction": "CH",
   "version": "0.1.0",
-  "last_ingest": "2026-04-05",
+  "last_ingest": "2026-05-01",
   "data": {
     "self_monitoring_requirements": 10,
     "registration_requirements": 12,
